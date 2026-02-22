@@ -1,0 +1,28 @@
+with new as (select d.driver_id,
+       d.driver_name,
+       t.trip_date,
+       AVG(case when t.trip_date between "2023-01-01" and "2023-06-30" then t.distance_km/t.fuel_consumed end) as first_half_avg,
+       AVG(case when t.trip_date between "2023-07-01" and "2023-12-31" then t.distance_km/t.fuel_consumed end) as second_half_avg
+from drivers d
+join trips t on d.driver_id=t.driver_id
+group by d.driver_id, d.driver_name)
+
+select driver_id,
+       driver_name,
+       first_half_avg,
+       second_half_avg,
+round(efficiency_improvement,2)  as efficiency_improvement 
+from (select driver_id,   
+       driver_name,
+       round(first_half_avg, 2) as first_half_avg ,
+       round(second_half_avg, 2) as second_half_avg,
+       second_half_avg-first_half_avg  as efficiency_improvement
+from new
+where first_half_avg is not null and 
+      second_half_avg is not null and
+      second_half_avg>first_half_avg
+order by efficiency_improvement DESC, 
+         driver_name ASC) a
+
+
+       
